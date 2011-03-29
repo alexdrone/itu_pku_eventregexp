@@ -1,11 +1,3 @@
 this is just an example of how a test can be structured and which library we need
 
---
-luca:~/Desktop/prove   
--> javac Test.java -cp lib/InfobusWebsocketClient.jar:lib/ebwsclient.jar:lib/jetty-util-8.0.0.M0.jar
-
-luca:~/Desktop/prove   
--> java Test -cp lib/InfobusWebsocketClient.jar:lib/ebwsclient.jar:lib/jetty-util-8.0.0.M0.jar 
-hello world =)
-
 
