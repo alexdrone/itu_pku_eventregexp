@@ -1,18 +1,40 @@
+import java.io.IOException;
+import dk.itu.infobus.ws.EventBus;
+import dk.itu.infobus.ws.EventBus.EventBusStatus;
+import dk.itu.infobus.ws.EventBus.EventBusStatusListener;
+
+
 import dk.itu.infobus.ws.*;
 
 class Test {
 	public static void main(String[] args) {
 		
+		Generator g;
 		
-
+		System.out.println("→ hello world =)");
+		System.out.println("→ start");
 		
-		PatternBuilder builder = new PatternBuilder();
-		builder.reset();
+		
+		EventBus eb = new EventBus("tiger.itu.dk",8004);
+		
+		eb.setStatusListener(new EventBusStatusListener() {
+			
+			public void onStatusChange(EventBusStatus status, EventBus eb) {
+				System.out.println("→ onStatusChange : "+status.name());
+			}
+			
+			public void onDispatchError(String str,Exception exc) {
+				System.out.println("→ onDispatchError : "+str);
+			}
+		});
 		
 
 				
-		System.out.println("hello world =)");
+		System.out.println("→ completed");
 		
 
 	}
+	
+	
+	
 }
