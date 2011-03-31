@@ -22,14 +22,16 @@ public class SequencePatternBuilder {
 		String lval, int lvalIndex, String lvalField, PatternOperator op, 
 		String rval, int rvalIndex, String rvalField) {
 					
-		return null;
+		this.constraintList.add(new SequencePatternConstraint(lval, lvalIndex, lvalField, op, rval, rvalIndex, rvalField));
+		return this;
 	}
 	
 	public SequencePatternBuilder addConstraint(
 		String lval, int lvalIndex, String lvalField, PatternOperator op,
 		String rval) {
-			
-		return null;
+		
+		this.constraintList.add(new SequencePatternConstraint(lval, lvalIndex, lvalField, op, rval));
+		return this;
 	}
 
 	
