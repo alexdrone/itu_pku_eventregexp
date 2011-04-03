@@ -28,6 +28,16 @@ class Test {
 			}
 		});
 		
+		try { 
+			eb.start();
+			eb.stop();
+			eb.start();
+			
+		} catch (Exception e) {
+			System.out.println("exc");
+		}
+		
+		
 
 				
 		System.out.println("→ completed");
