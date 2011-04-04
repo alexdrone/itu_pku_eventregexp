@@ -7,8 +7,7 @@ public class PatternMatchingListener extends Listener {
 	private Listener listener;
 	
 	/**
-	 * Creates a new <code>PatternMatchingListener</code> from a given
-	 * stream
+	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
 	 */
 	public PatternMatchingListener(List<ListenerToken<E>> pattern) {
@@ -62,5 +61,10 @@ public class PatternMatchingListener extends Listener {
 	
 		System.out.println("filtering the data.");
 		/* pattern matching logic */ 
+	}
+	
+	/* test main */
+	public static void main(String[] args) {
+		
 	}
 }
