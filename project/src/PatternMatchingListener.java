@@ -1,4 +1,4 @@
-import java.util.list.*;
+import java.util.*;
 import dk.itu.infobus.ws.*;
 
 public class PatternMatchingListener extends Listener {
@@ -10,7 +10,7 @@ public class PatternMatchingListener extends Listener {
 	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
 	 */
-	public PatternMatchingListener(List<ListenerToken<E>> pattern) {
+	public PatternMatchingListener(List pattern) {
 		
 		listener = new Listener(pattern) {
 			
@@ -40,7 +40,7 @@ public class PatternMatchingListener extends Listener {
 	 * the identity of the listener, or that needs the listener to be 
 	 * already connected to the server.
 	 */
-	public void cleanUp() throws Exception() { /* todo */ }
+	public void cleanUp() throws Exception { /* todo */ }
 	
 	/** 
 	 * Called whenever an event is received for this listener
