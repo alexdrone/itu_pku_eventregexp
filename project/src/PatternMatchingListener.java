@@ -40,7 +40,7 @@ public class PatternMatchingListener extends Listener {
 	 * the identity of the listener, or that needs the listener to be 
 	 * already connected to the server.
 	 */
-	public void cleanUp() throws Exception() { /* todo */ }
+	public void cleanUp() throws Exception { /* todo */ }
 	
 	/** 
 	 * Called whenever an event is received for this listener
