@@ -1,18 +1,25 @@
-import java.util.*;
 import dk.itu.infobus.ws.*;
 
-public class PatternMatchingListener extends Listener {
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import dk.itu.infobus.ws.ListenerToken;
+
+public class PatternMatchingListener extends dk.itu.infobus.ws.Listener {
 	
 	/* the class stream */
 	private Listener listener;
-	
+
 	/**
 	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
 	 */
-	public PatternMatchingListener(PatternBuilder pattern) {
+	public PatternMatchingListener(List<ListenerToken<?>> pattern) {
 		
-		listener = new Listener(pattern.getPattern()) {
+		super(pattern);
+		
+		this.listener = new Listener(pattern) {
 			
 			/* is used when the listener has to release some resource when 
 			 * it is removed from the server */
@@ -64,7 +71,7 @@ public class PatternMatchingListener extends Listener {
 	}
 	
 	/* test main */
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		
 		EventBus eb = new EventBus("tiger.itu.dk",8004);
 		
@@ -76,7 +83,7 @@ public class PatternMatchingListener extends Listener {
 			.addMatchAll("foo")
 			.add("bar", PatternOperator.NEQ, 10);
 			
-		Listener listener = new PatternMatchingListener(pb) {
+		Listener listener = new PatternMatchingListener(pb.getPattern()) {
 			
 			/* user will mainly override this method */
 			public void onMessage(Map<String, Object> msg) {
