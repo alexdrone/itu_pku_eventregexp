@@ -66,23 +66,5 @@ public class PatternMatchingListener extends Listener {
 	/* test main */
 	public static void main(String[] args) {
 		
-		EventBus eb = new EventBus("tiger.itu.dk",8004);
-		
-		eb.start();
-		eb.addGenerator(new SampleGenerator());
-		
-		/* new pattern */
-		PatternBuilder pb = new PatternBuilder()
-			.addMatchAll("foo")
-			.add("bar", PatternOperator.NEQ, 10);
-			
-		Listener listener = new PatternMatchingListener(pb.getPattern()) {
-			
-			/* user will mainly override this method */
-			public void onMessage(Map<String, Object> msg) {
-			    Util.traceEvent(msg);	
-			}
-
-		};
 	}
 }
