@@ -91,5 +91,7 @@ public class PatternMatchingListener extends dk.itu.infobus.ws.Listener {
 			}
 
 		};
+		
+		eb.addListener(listener);
 	}
 }
