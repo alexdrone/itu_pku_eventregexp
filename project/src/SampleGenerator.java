@@ -1,4 +1,4 @@
-import java.util.Map;
+import java.util.*;
 import dk.itu.infobus.ws.*;
 
 public class SampleGenerator extends GeneratorAdapter {

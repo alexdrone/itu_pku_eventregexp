@@ -1,8 +1,7 @@
 import dk.itu.infobus.ws.*;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import dk.itu.infobus.ws.ListenerToken;
 
@@ -10,7 +9,22 @@ public class PatternMatchingListener extends dk.itu.infobus.ws.Listener {
 	
 	/* the class stream */
 	private Listener listener;
-
+	
+	/* contains all the terms added to the sequence
+	 * TODO: Is possible to have just 2 nested terms, the subsequences
+	 * should (?) be inifinite. */
+	private List<List<SequenceTerm>> terms = 
+		new LinkedList<List<SequenceTerm>>();
+		
+	/* pointer to the current term-set */
+	private int seqPointer = 0;
+	
+	/* contains all the matched entries */
+	private List<Map<String, Object>> matchedEntries;
+	
+	/* the name of the sequence */
+	private String seqName;
+	
 	/**
 	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
@@ -28,7 +42,7 @@ public class PatternMatchingListener extends dk.itu.infobus.ws.Listener {
 			/* is called when an event matching the pattern has been 
 			 * received */
 			public void onMessage(Map<String, Object> msg) {
-				someLogic();
+				staticMatching(msg);
 				onMessage(msg);
 			}
 			
@@ -63,11 +77,34 @@ public class PatternMatchingListener extends dk.itu.infobus.ws.Listener {
 	 */
 	public void onStarted() { /* todo */ }
 	
+	/**
+	 * Add the given sequence to the match-criteria 
+	 * @param b A <code>SequenceBuilder</code> representing the sequence 
+	 */
+	public void setSequence(SequenceBuilder b) {
+		this.terms = b.getTerms();
+		this.seqName = b.getName();
+	}
 	
-	public void someLogic() { 
-	
-		System.out.println("filtering the data.");
-		/* pattern matching logic */ 
+	/**
+	 * Core method - automata implementing the static matching 
+	 * of the pattern
+	 */
+	private void staticMatching(Map<String, Object> msg) { 
+
+		/* last item of the sequence */
+		if (seqPointer == terms.size()) {
+			Map result = new HashMap();
+			result.put(seqName, matchedEntries);
+			
+			/* call the onMessage method in order to notify the client
+			 * of the matched data */
+			onMessage(result);
+			return;
+		}				
+		
+		/* TODO */
+		
 	}
 	
 	/* test main */
