@@ -5,33 +5,37 @@ import java.util.*;
 
 import dk.itu.infobus.ws.ListenerToken;
 
-public class SkipTillNextMatchListener extends dk.itu.infobus.ws.Listener {
+public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	
 	/* the class stream */
 	private Listener listener;
 	
-	/* contains all the terms added to the sequence
-	 * TODO: Is possible to have just 2 nested terms, the subsequences
-	 * should (?) be inifinite. */
-	private List<List<SequenceTerm>> terms = 
-		new LinkedList<List<SequenceTerm>>();
+	/* the given sequence to match */
+	private SequenceBuilder sequence;
+	
+	/* all the matched elements */
+	private List<Map<String, Object>> matched =
+		new LinkedList<Map<String, Object>>();
 		
-	/* pointer to the current term-set */
-	private int seqPointer = 0;
-	
-	/* contains all the matched entries */
-	private List<Map<String, Object>> matchedEntries;
-	
-	/* the name of the sequence */
-	private String seqName;
+	/* the current match */
+	private List<List<Map<String,Object>>> currentMatch;
+		
+	/* the counter for the occurrences */
+	private List<Integer> counters;
+		
+	/* pointer to the current node in the sequence */
+	private int pointer = 0;
 	
 	/**
 	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
 	 */
-	public PatternMatchingListener(List<ListenerToken<?>> pattern) {
+	public SkipTillNextMatchListener(
+		EventBus eb,
+		List<ListenerToken<?>> pattern, 
+		SequenceBuilder sequence) {
 		
-		super(pattern);
+		//super(pattern);
 		
 		this.listener = new Listener(pattern) {
 			
@@ -42,8 +46,8 @@ public class SkipTillNextMatchListener extends dk.itu.infobus.ws.Listener {
 			/* is called when an event matching the pattern has been 
 			 * received */
 			public void onMessage(Map<String, Object> msg) {
-				staticMatching(msg);
-				onMessage(msg);
+				match(msg);
+				//onMessage(msg);
 			}
 			
 			/* is used to define some initialization. It is called when the 
@@ -52,7 +56,13 @@ public class SkipTillNextMatchListener extends dk.itu.infobus.ws.Listener {
 			
 		};
 		
-		/* todo: other initialization */
+		this.sequence = sequence;
+		
+		try { 
+			eb.addListener(this.listener);
+		} catch (IOException e) { 
+			System.out.println("Unable to connect to the server");
+		}
 	}
 	
 	/**
@@ -66,7 +76,6 @@ public class SkipTillNextMatchListener extends dk.itu.infobus.ws.Listener {
 	/** 
 	 * Called whenever an event is received for this listener
 	 */
-	@Override
 	public void onMessage(Map<String, Object> msg) { 
 		/* end-user will override this method */
 	}
@@ -76,59 +85,129 @@ public class SkipTillNextMatchListener extends dk.itu.infobus.ws.Listener {
 	 * resources.
 	 */
 	public void onStarted() { /* todo */ }
-	
-	/**
-	 * Add the given sequence to the match-criteria 
-	 * @param b A <code>SequenceBuilder</code> representing the sequence 
-	 */
-	public void setSequence(SequenceBuilder b) {
-		this.terms = b.getTerms();
-		this.seqName = b.getName();
-	}
+
 	
 	/**
 	 * Core method - automata implementing the static matching 
 	 * of the pattern
 	 */
-	private void staticMatching(Map<String, Object> msg) { 
-
-		/* last item of the sequence */
-		if (seqPointer == terms.size()) {
-			Map result = new HashMap();
-			result.put(seqName, matchedEntries);
+	private void match(Map<String, Object> msg) { 
+						
+		/* the current pointed node in the sequence */
+		List<SequenceTermBuilder> node = sequence.get(pointer);
+		
+		/* initialize the used data structures */
+		if (counters == null) {
 			
-			/* call the onMessage method in order to notify the client
-			 * of the matched data */
-			onMessage(result);
-			return;
-		}				
+			counters = new LinkedList<Integer>();
+									
+			currentMatch = new LinkedList<List<Map<String,Object>>>();
+			for (SequenceTermBuilder term : node) {
+				
+				/* creates the list for this node */
+				List<Map<String,Object>> l = 
+					new LinkedList<Map<String,Object>>();
+					
+				currentMatch.add(l);
+				
+				/* the counters */
+				counters.add(0);
+			}				
+		}
+			
+		/* element in AND */
+		if (!sequence.isNegated(pointer)) {
+						
+			/* iterate through each term of the node */
+			int i = 0;
+			for (SequenceTermBuilder term : node) {
+				
+				int expectedOccurrences = term.getOccurrences();
+				int occurrences = counters.get(i);
+				
+				/* if this term match */
+				if (matchEvent(msg, term.getCriteria())) {
+					System.out.println("is matched");
+					
+					currentMatch.get(i).add(msg);
+					counters.add(i, ++occurrences);
+
+					
+				}
+				
+				/* if a matching of a single term is terminated we just
+				 * move the pointer on */
+				if (expectedOccurrences > 0 && 
+					occurrences == expectedOccurrences) {
+						
+						/* we append all the current match for this term
+						 * in the final matched events list */
+						matched.addAll(currentMatch.get(i));
+						
+						/* we move to next node */
+						pointer++;
+						
+						/* we initialize the temporary variables for the 
+						 * next node-check */
+						counters = null;
+						currentMatch = null;
+					}				
+				i++;
+			}
 		
-		/* TODO */
+		/* element in AND NOT */
+		} else {
+			
+			/* todo */
+		}
 		
+		/* check if the entire sequence is matched */
+		if (pointer == sequence.size()) {
+			/* we just notify the client with the entire matched sequence */
+			Map<String, Object> map = new HashMap<String, Object>();
+			map.put("sequence", matched);
+			onMessage(map);
+			
+			/* pointer is resetted */
+			pointer = 0;
+			
+			/* and matched initialized again */
+			 matched =
+				new LinkedList<Map<String, Object>>();
+		}
+
+		/* fin */
 	}
 	
-	/* test main */
-	public static void main(String[] args) throws Exception {
+	/**
+	 * It checks if a single event in the stream is compatible with a given
+	 * criteria
+	 * @param msg the event from the stream
+	 * @param criteria the given criteria - a dictonary with the following 
+	 * keys: <code>field</code>, <code>operator</code> and <code>value</code>
+	 * @return <code>true</code> if the event match the criteria, 
+	 * <code>false</code> otherwise.
+	 */
+	private boolean matchEvent(Map<String, Object> m, 
+	List<Map<String, Object>> criteria) {
+				
+		for (Map<String, Object> c : criteria) {
 		
-		EventBus eb = new EventBus("tiger.itu.dk",8004);
+			String field = (String) c.get("field");
+			Object value = c.get("value");
 		
-		eb.start();
-		eb.addGenerator(new SampleGenerator());
+			switch((PatternOperator) c.get("operator")) {
+				
+				case EQ:
+					if (!m.get(field).equals(value)) return false;
+					
+				/* TODO: other cases */
+				
+				default: 
+					break;
+			}	
+		}
 		
-		/* new pattern */
-		PatternBuilder pb = new PatternBuilder()
-			.addMatchAll("foo")
-			.add("bar", PatternOperator.NEQ, 10);
-			
-		Listener listener = new PatternMatchingListener(pb.getPattern()) {
-			
-			/* user will mainly override this method */
-			public void onMessage(Map<String, Object> msg) {
-			    Util.traceEvent(msg);	
-			}
-
-		};
-		
-		eb.addListener(listener);
+		return true;
 	}
 }

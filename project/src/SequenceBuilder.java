@@ -2,39 +2,69 @@ import java.util.*;
 import dk.itu.infobus.ws.*;
 
 public class SequenceBuilder {
+
+	/* the sequence of terms */
+	List<List<SequenceTermBuilder>> sequence = 
+		new LinkedList<List<SequenceTermBuilder>>();
 	
-	/* contains all the terms added to the sequence
-	 * TODO: Is possible to have just 2 nested terms, the subsequences
-	 * should (?) be inifinite. */
-	private List<List<SequenceTerm>> terms = 
-		new LinkedList<List<SequenceTerm>>();
-	
-	/* the name of the sequence */
-	private String name;
-	
-	public SequenceBuilder(String name) {
-		this.name = name;
-	}
+	/* conjuctions[i] is true if the i-term is asserted, false otherwise */
+	List<Boolean> conjunctions = new LinkedList<Boolean>(); 
 	
 	/**
-	 * Adds the given terms to the sequence
-	 * @param objects the <code>SequenceTerms</code> to match 
-	 * @return The current sequence
+	 * It add a new node to the current sequence.
+	 * All the terms given as a parameter will be evaluated with an 'OR' 
+	 * relationship.
+	 * @param terms The given terms.
 	 */
-	public SequenceBuilder and(SequenceTerm... objects) { 
+	public SequenceBuilder and(SequenceTermBuilder... terms) {
 		
-		List<SequenceTerm> list = new LinkedList<SequenceTerm>();
-		for (SequenceTerm t : objects) list.add(t);
+		/* the term is not negated */
+		conjunctions.add(true);
+		addTerms(terms);
 		
-		this.terms.add(list); 
 		return this;
 	}
 	
 	/**
-	 * Returns the terms of the list 
+	 * It add a new node to the current sequence.
+	 * All the terms given as a parameter (negated) will be evaluated with an 
+	 * 'OR' relationship.
+	 * @param terms The given terms.
 	 */
-	public List<List<SequenceTerm>> getTerms() { return this.terms; }
+	public SequenceBuilder andNot(SequenceTermBuilder... terms) {
+		
+		/* the term is not negated */
+		conjunctions.add(false);
+		addTerms(terms);
+		
+		return this;
+	}
+
+	/* adds the terms to the sequence */
+	private void addTerms(SequenceTermBuilder... terms) {
+		
+		/* creates a new node for the sequence */
+		LinkedList<SequenceTermBuilder> node = 
+			new LinkedList<SequenceTermBuilder>();
+		
+		for (SequenceTermBuilder t : terms) node.add(t);
+		
+		/* add the node to the current sequence */
+		sequence.add(node);
+	}
 	
-	public String getName() { return name; }
+	/**
+	 * Returns a <code>SequenceTerm</code> at the given index 
+	 */ 
+	public List<SequenceTermBuilder> get(int index) { 
+		return sequence.get(index);
+	}
 	
+	public boolean isNegated(int index) {
+		return !conjunctions.get(index);
+	}
+
+	public int size() {
+		return sequence.size();
+	}
 }
