@@ -157,6 +157,19 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 						break;
 					}				
 					
+				/* is a possible infinite sequence */
+				if (expectedOccurrences < 0) {
+					List<Map<String, Object>> lookAhead = lookAhead();
+					
+					if (lookAhed != null) {
+						
+						matched.addAll(currentMatch.get(i));
+						matched.addAll(lookAhead);
+						
+						
+					}
+
+				}
 					
 				i++;
 			}
@@ -219,6 +232,23 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		
 		return true;
 	}
+	
+	
+	public List<Map<String, Object>> lookAhead() {
+		
+		
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 
 	
