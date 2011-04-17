@@ -19,9 +19,15 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		
 	/* the current match */
 	private List<List<Map<String,Object>>> currentMatch;
-		
+	
 	/* the counter for the occurrences */
 	private List<Integer> counters;
+	
+	/* the ahead matching list - used for infinite matching sequences */
+	private List<List<Map<String,Object>>> aheadMatch;
+		
+	/* the counter for the ahead occurrences */
+	private List<Integer> aheadCounters;
 		
 	/* pointer to the current node in the sequence */
 	private int pointer = 0;
@@ -120,7 +126,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 						
 			/* iterate through each term of the node */
 			int i = 0;
-			for (SequenceTermBuilder term : node) {
+			for (SequenceTermBuilder term : node) {				
 				
 				int expectedOccurrences = term.getOccurrences();
 				int occurrences = counters.get(i);
@@ -131,10 +137,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 					
 					currentMatch.get(i).add(msg);
 					counters.add(i, ++occurrences);
-
-					
 				}
-				
 				/* if a matching of a single term is terminated we just
 				 * move the pointer on */
 				if (expectedOccurrences > 0 && 
@@ -151,7 +154,10 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 						 * next node-check */
 						counters = null;
 						currentMatch = null;
+						break;
 					}				
+					
+					
 				i++;
 			}
 		
@@ -190,9 +196,11 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	 */
 	private boolean matchEvent(Map<String, Object> m, 
 	List<Map<String, Object>> criteria) {
-				
-		for (Map<String, Object> c : criteria) {
+
 		
+		for (Map<String, Object> c : criteria) {
+
+			
 			String field = (String) c.get("field");
 			Object value = c.get("value");
 		
@@ -200,6 +208,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 				
 				case EQ:
 					if (!m.get(field).equals(value)) return false;
+					break;
 					
 				/* TODO: other cases */
 				
@@ -210,4 +219,8 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		
 		return true;
 	}
+	
+
+	
+	
 }

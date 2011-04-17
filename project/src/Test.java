@@ -29,18 +29,19 @@ public class Test {
 		
 		SequenceTermBuilder bar_a = 
 			new SequenceTermBuilder()
-				.add("bar", PatternOperator.EQ, 10);
+				.add("bar", PatternOperator.EQ, 30);
 						
 		SequenceTermBuilder foo_b = 
 			new SequenceTermBuilder()
-				.add("foo", PatternOperator.EQ, 6);
+				.add("foo", PatternOperator.EQ, new Long(6));
 
 		SequenceTermBuilder bar_b = 
 			new SequenceTermBuilder()
-				.add("bar", PatternOperator.EQ, 15);
+				.add("bar", PatternOperator.EQ, new Long(40))
+				.setOccurrences(2);
 		
 		SequenceBuilder sequence = 
-			new SequenceBuilder().and(foo_a);
+			new SequenceBuilder().and(foo_a).and(foo_b, bar_b);
 		
 		
 		/* creates the 	SkipTillNextMatchListener */

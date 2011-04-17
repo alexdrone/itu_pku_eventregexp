@@ -54,5 +54,8 @@ public class SequenceTermBuilder {
 	public List<Map<String,Object>> getCriteria() { return terms; }
 	
 	public int getOccurrences() { return occurrences; }
+	
+	
+	public String toString() { return terms.toString(); }
 
 }
