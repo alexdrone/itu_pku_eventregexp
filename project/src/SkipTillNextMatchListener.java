@@ -24,10 +24,10 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	private List<Integer> counters;
 	
 	/* the ahead matching list - used for infinite matching sequences */
-	private List<List<Map<String,Object>>> aheadMatch;
+	private List<List<List<Map<String,Object>>>> aheadMatch;
 		
 	/* the counter for the ahead occurrences */
-	private List<Integer> aheadCounters;
+	private List<List<Integer>> aheadCounters;
 		
 	/* pointer to the current node in the sequence */
 	private int pointer = 0;
@@ -158,19 +158,9 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 					}				
 					
 				/* is a possible infinite sequence */
-				if (expectedOccurrences < 0) {
-					List<Map<String, Object>> lookAhead = lookAhead();
-					
-					if (lookAhed != null) {
-						
-						matched.addAll(currentMatch.get(i));
-						matched.addAll(lookAhead);
-						
-						
-					}
-
-				}
-					
+				if (expectedOccurrences < 0)
+					lookAheadMatch(term, index, msg);
+				
 				i++;
 			}
 		
@@ -233,13 +223,40 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		return true;
 	}
 	
-	
-	public List<Map<String, Object>> lookAhead() {
+	/**
+	 * Recursively match an infinite sequence 
+ 	 * @param term the term to evaluate
+	 * @param index the current index on the current match list
+	 * @param msg the input message 
+	 */
+	private void lookAheadTerm(SequenceTermBuilder term, int index, 
+	Map<String, Object> msg) {
 		
+		/* easyest case - the first is element compatible with
+		 * the infinite match */
+		if (matchEvent(msg, term.getCriteria())) {
+			System.out.println("kleene match");
 		
+			currentMatch.get(i).add(msg);
+			counters.add(i, ++occurrences);
+			
+			return;
+		}
+		
+		/* the current pointed node in the sequence */
+		List<SequenceTermBuilder> nextNode = sequence.get(pointer);		
+		
+		lookAheadSequence(nextNode, pointer+1);
 		
 	}
 	
+	private void lookAheadSequence(List<SequenceTermBuilder> nextNode, 
+	int lookAheadPointer) {
+		
+		if 
+		
+	}
+
 	
 	
 	
