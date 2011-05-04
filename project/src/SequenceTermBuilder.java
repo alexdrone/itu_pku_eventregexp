@@ -18,6 +18,10 @@ public class SequenceTermBuilder {
 	/* the cardinality of the term in the sequence */
 	private int occurrences = SINGLE;
 	
+	/* tofix: put it protected - used to keep track
+	 * of the sequence stack for this term */
+	public InfiniteTermStack _stack;
+	
 	/**
 	 * Adds a criteria to the current term-filter 
 	 * @param field The fieldname 
@@ -47,6 +51,10 @@ public class SequenceTermBuilder {
 	 */
 	public SequenceTermBuilder setOccurrences(int occurrences) {
 		this.occurrences = occurrences;
+		
+		/* stack structure */
+		if (this.occurrences == KLEENE_STAR || 
+			this.occurrences == KLEENE_PLUS) _stack = new InfiniteTermStack();
 		
 		return this;
 	}

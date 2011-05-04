@@ -22,12 +22,6 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	
 	/* the counter for the occurrences */
 	private List<Integer> counters;
-	
-	/* the ahead matching list - used for infinite matching sequences */
-	private List<List<List<Map<String,Object>>>> aheadMatch;
-		
-	/* the counter for the ahead occurrences */
-	private List<List<Integer>> aheadCounters;
 		
 	/* pointer to the current node in the sequence */
 	private int pointer = 0;
@@ -232,6 +226,23 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	private void lookAheadTerm(SequenceTermBuilder term, int index, 
 	Map<String, Object> msg) {
 		
+		int aheadCall = lookAheadSequence(nextNode, pointer+1, term, 0);
+		if (aheadCall > 0) {
+			
+			/* the matched subsequence will be added by the recursive
+			 * function ?  */
+			
+			/* we move to next node */
+			pointer++;
+			
+			/* we initialize the temporary variables for the 
+			 * next node-check */
+			counters = null;
+			currentMatch = null;
+			break;
+		}
+		
+		
 		/* easyest case - the first is element compatible with
 		 * the infinite match */
 		if (matchEvent(msg, term.getCriteria())) {
@@ -246,28 +257,83 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		/* the current pointed node in the sequence */
 		List<SequenceTermBuilder> nextNode = sequence.get(pointer);		
 		
-		lookAheadSequence(nextNode, pointer+1);
 		
 	}
 	
-	private void lookAheadSequence(List<SequenceTermBuilder> nextNode, 
-	int lookAheadPointer) {
+	/** 
+	 * this function is called everytime an infinite term is found.
+	 * it looks ahead in the sequence for terms that could match the 
+	 * given message
+	 * @param node  the current node in the seq
+	 * @param lookAheadPointer local pointer to the sequence node
+	 * @param termCaller the term that called this method
+	 * @param stackPos the index for the current term's stack position 
+	 */
+	private List<Map<String,Object>> lookAheadSequence(
+	List<SequenceTermBuilder> node, int lookAheadPointer, 
+	SequenceTermBuilder termCaller, int stackPos) {
 		
-		if 
+		/* the term that called this method */
+		InfiniteTermStack stack = termCaller._stack;
 		
+		/* counters / match lists initialization */
+		if (stack.aheadCounter.get(stackPos) == null) {
+			
+			/* the data structures for this stack position */
+			List<Map<String, Object>>> aheadMatches = 
+				new List<Map<String, Object>>();
+			
+			List<Integers> aheadCounters = new List<Integers>();
+			
+			/* initialized if it's the first time they're used */
+			stack.aheadMatches(stackPos).add(aheadMatches);
+			stack.aheadCounters(stackPos).add(aheadCounters);
+		}
+				
+		/* element in AND */
+		if (!sequence.isNegated(lookAheadPointer)) {
+						
+			/* iterate through each term of the node */
+			int i = 0;
+			for (SequenceTermBuilder term : node) {
+				
+				int expectedOccurrences = term.getOccurrences();
+				int occurrences = stack.aheadCounter.get(stackPos).get(i);
+				
+				/* if this term match */
+				if (matchEvent(msg, term.getCriteria())) {
+					System.out.println("is matched");
+
+					currentMatch.get(i).add(msg);
+					stack.aheadCounters.get(stackPos).add(i, ++occurrences);
+				}
+				
+				/* if a matching of a single term is terminated we just
+				 * move the pointer on */
+				if (expectedOccurrences > 0 && 
+					occurrences == expectedOccurrences) {
+						return stack.aheadMatches.get(stackPos).get(i);
+						this.pointer = lookAheadPointer + 1;
+						
+						/* we initialize the temporary variables for the 
+						 * next node-check */
+						counters = null;
+						currentMatch = null;
+						break;
+					}
+					
+				/* is a possible infinite sequence */
+				//if (expectedOccurrences < 0)
+				
+				i++;
+			}
+			
+		/* element in AND NOT */
+		} else {
+			/* todo */
+		}
+		
+		return null;
 	}
-
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-
-	
 	
 }
