@@ -17,10 +17,13 @@ public class Test {
 		eb.start();
 		eb.addGenerator(new SampleGenerator());
 		
-		/* new pattern */
+		doTestA(eb);
+	}
+	
+	/* first test */
+	public static void doTestA(EventBus eb) {
 		PatternBuilder pb = new PatternBuilder()
 			.addMatchAll("foo");
-	
 	
 		/* Sequence test */
 		SequenceTermBuilder foo_a = 
@@ -43,7 +46,6 @@ public class Test {
 		SequenceBuilder sequence = 
 			new SequenceBuilder().and(foo_a).and(foo_b, bar_b);
 		
-		
 		/* creates the 	SkipTillNextMatchListener */
 		SkipTillNextMatchListener listener = 
 			new SkipTillNextMatchListener(eb, pb.getPattern(), sequence) {
@@ -55,11 +57,6 @@ public class Test {
 			}
 
 		};
-			
-		
-		
-	
-	
 	}
 	
 	
