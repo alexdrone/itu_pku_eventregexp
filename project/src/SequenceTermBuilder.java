@@ -63,6 +63,8 @@ public class SequenceTermBuilder {
 	
 	public int getOccurrences() { return occurrences; }
 	
+	/** Cleans up the stack data for this term */
+	public void cleanUp() { if (_stack != null) _stack.cleanUp(); }
 	
 	public String toString() { return terms.toString(); }
 

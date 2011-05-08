@@ -73,6 +73,11 @@ public class Test {
 			new SequenceTermBuilder()
 				.add("bar", PatternOperator.EQ, 30)
 				.setOccurrences(SequenceTermBuilder.KLEENE_STAR);
+			
+		SequenceTermBuilder bar_c = 
+			new SequenceTermBuilder()
+				.add("bar", PatternOperator.EQ, 60)
+				.setOccurrences(2);
 						
 		SequenceTermBuilder foo_b = 
 			new SequenceTermBuilder()
@@ -84,7 +89,7 @@ public class Test {
 				.setOccurrences(2);
 		
 		SequenceBuilder sequence = 
-			new SequenceBuilder().and(foo_a).and(bar_a_).and(foo_b, bar_b);
+			new SequenceBuilder().and(foo_a).and(bar_c, bar_a);
 		
 		/* creates the 	SkipTillNextMatchListener */
 		SkipTillNextMatchListener listener = 

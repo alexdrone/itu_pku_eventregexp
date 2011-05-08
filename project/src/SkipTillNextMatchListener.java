@@ -26,6 +26,9 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	/* pointer to the current node in the sequence */
 	private int pointer = 0;
 	
+	
+	private boolean smallestSequence = false;
+	
 	/**
 	 * Creates a new <code>PatternMatchingListener</code> from a given stream
 	 * @param pattern The pattern that describes the stream 
@@ -121,7 +124,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 			/* iterate through each term of the node */
 			int i = 0;
 			for (SequenceTermBuilder term : node) {				
-				
+								
 				int expectedOccurrences = term.getOccurrences();
 				int occurrences = counters.get(i);
 				
@@ -152,21 +155,29 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 					}				
 					
 				/* is a possible infinite sequence */
-				if (expectedOccurrences < 0) {
+				if (expectedOccurrences < 0 && 
+					pointer + 1 < sequence.size()) {
+					
+					/* clean the stack data for all the terms in the 
+					 * sequence */
+					for (List<SequenceTermBuilder> l : sequence.sequence)
+						for (SequenceTermBuilder t : l) t.cleanUp();
 					
 					/* call to the recursive function */
 					List<Map<String,Object>> aheadCall = 
 						lookAheadSequence(pointer+1, term, msg);
 					
 					if (aheadCall != null) {
-						/* the matched subsequence will be added by the recursive
-						 * function ?  */
+						/* the matched subsequence will be added by the
+						 * recursive function ?  */
 						matched.addAll(aheadCall);
 
 						/* we initialize the temporary variables for the 
 						 * next node-check */
 						counters = null;
 						currentMatch = null;	
+						
+						break;
 						
 					/* easiest case - the first is element compatible with
 					 * the infinite match */
@@ -175,10 +186,11 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 
 						currentMatch.get(i).add(msg);
 						counters.add(i, ++occurrences);
-						pointer++;
-
-						break;
 					}
+				
+				/* is the last node */
+				} else if (expectedOccurrences < 0) {
+					/* todo: implement */
 				}
 				
 				i++;
@@ -220,9 +232,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	private boolean matchEvent(Map<String, Object> m, 
 	List<Map<String, Object>> criteria) {
 
-		
 		for (Map<String, Object> c : criteria) {
-
 			
 			String field = (String) c.get("field");
 			Object value = c.get("value");
@@ -252,17 +262,33 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	 */
 	private List<Map<String,Object>> lookAheadSequence(int lookAheadPointer, 
 	SequenceTermBuilder termCaller, Map<String,Object> msg) {
-				
+						
+		if (lookAheadPointer >= sequence.size())
+			throw new RuntimeException("(lookAheadSequence) Recursion went too far");
+						
 		/* the previous term stack */ 
 		InfiniteTermStack stack = termCaller._stack;
 		
-		/* get the node from the sequence */
+		/* initialize the data structures */
+		/* the current pointed node in the sequence */
 		List<SequenceTermBuilder> node = sequence.get(lookAheadPointer);
 		
-		/* initialize the data structures */
-		if (stack.aheadMatches.size() == 0) {
-			for (SequenceTermBuilder term : node)
-				stack.aheadMatches.add(new LinkedList<Map<String,Object>>());
+		if (stack.aheadCounters == null) {
+			
+			stack.aheadCounters = new LinkedList<Integer>();						
+			stack.aheadMatches = new LinkedList<List<Map<String,Object>>>();
+			
+			for (SequenceTermBuilder term : node) {
+				
+				/* creates the list for this node */
+				List<Map<String,Object>> l = 
+					new LinkedList<Map<String,Object>>();
+					
+				stack.aheadMatches.add(l);
+				
+				/* the counters */
+				stack.aheadCounters.add(0);
+			}				
 		}
 		
 		/* element in AND */
@@ -273,28 +299,43 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 			
 			for (SequenceTermBuilder term : node) {
 				
+				/* TODO: remove - debug print line */
+				System.out.println("•• debug ••  : " + node);
+				
 				int expectedOccurrences = term.getOccurrences();
 				int occurrences = stack.aheadCounters.get(i);
 				
 				/* again is an infinite term */
 				if (expectedOccurrences < 0) {
 					
-					/* evaluate the recursive call */
-					List<Map<String,Object>> result =
-					lookAheadSequence(lookAheadPointer + 1, term, msg);
+					/* TODO: remove - debug print line */
+					System.out.println("•• debug •• : is an infinite term");
+
+					if (lookAheadPointer + 1 < sequence.size())	{				
 					
-					/* returns the recursive result */
-					if (result != null) {
-						stack.aheadMatches.get(i).addAll(result);
-						return stack.aheadMatches.get(i);
+						/* evaluate the recursive call */
+						List<Map<String,Object>> result =
+						lookAheadSequence(lookAheadPointer + 1, term, msg);
+					
+						/* returns the recursive result */
+						if (result != null) {
+							stack.aheadMatches.get(i).addAll(result);
+							return stack.aheadMatches.get(i);
+						}
+					} else {
+						/* todo: just add the matching elements with 
+						 * the infinite term */
 					}
 				
 				/* it's a finite cardinality term */
 				} else {
 					
+					/* TODO: remove - debug print line */
+					System.out.println("•• debug •• : is a finite term");
+					
 					/* try to match the event message */
 					if (matchEvent(msg, term.getCriteria())) {
-						System.out.println("(lookAheadSequence) match");
+						System.out.println("(lookAheadSequence) match with " + msg);
 
 						stack.aheadMatches.get(i).add(msg);
 						stack.aheadCounters.add(i, ++occurrences);
@@ -304,7 +345,7 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 					 * move the pointer on */
 					if (expectedOccurrences > 0 && 
 						occurrences == expectedOccurrences) {	
-							this.pointer = lookAheadPointer;
+							this.pointer = lookAheadPointer + 1;
 							return stack.aheadMatches.get(i);
 						}
 				}

@@ -4,11 +4,11 @@ import dk.itu.infobus.ws.*;
 public class SequenceBuilder {
 
 	/* the sequence of terms */
-	List<List<SequenceTermBuilder>> sequence = 
+	public List<List<SequenceTermBuilder>> sequence = 
 		new LinkedList<List<SequenceTermBuilder>>();
 	
 	/* conjuctions[i] is true if the i-term is asserted, false otherwise */
-	List<Boolean> conjunctions = new LinkedList<Boolean>(); 
+	public List<Boolean> conjunctions = new LinkedList<Boolean>(); 
 	
 	/**
 	 * It add a new node to the current sequence.

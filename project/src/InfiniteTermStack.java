@@ -7,9 +7,12 @@ import dk.itu.infobus.ws.ListenerToken;
 
 public class InfiniteTermStack {
 	
-	public List<List<Map<String, Object>>> aheadMatches = 
-		new LinkedList<List<Map<String, Object>>>();
-		
-	public List<Integer> aheadCounters = new LinkedList<Integer>();
+	public List<List<Map<String, Object>>> aheadMatches;		
+	public List<Integer> aheadCounters;
+	
+	public void cleanUp() {
+		this.aheadMatches = null;
+		this.aheadCounters = null;
+	}
 	
 }
