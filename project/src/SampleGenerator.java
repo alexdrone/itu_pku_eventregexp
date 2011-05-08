@@ -14,8 +14,15 @@ public class SampleGenerator extends GeneratorAdapter {
 		
 			@Override
 			public void run() {
-				int[] foos = {1,  2,  3,  4,  5,  6,  5,  8,  8, 10};
-				int[] bars = {5, 10, 10, 15, 25, 30, 35, 40, 40, 40};
+				
+				/* first test */
+				//int[] foos = {1,  2,  3,  4,  5,  6,  5,  8,  8, 10};
+				//int[] bars = {5, 10, 10, 15, 25, 30, 35, 40, 40, 40};
+				
+				
+				/* second test */
+				int[] foos = {5,  0,  0,  0, 6};
+				int[] bars = {0, 30, 30, 30, 0};
 				
 				/* the EventBuilder class is a utility class that wraps a 
 				 * Map<String,Object>, its use is to create quickly maps 

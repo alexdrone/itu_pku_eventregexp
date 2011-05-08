@@ -17,7 +17,7 @@ public class Test {
 		eb.start();
 		eb.addGenerator(new SampleGenerator());
 		
-		doTestA(eb);
+		doTestB(eb);
 	}
 	
 	/* first test */
@@ -58,6 +58,47 @@ public class Test {
 
 		};
 	}
+	
+	/* second test */
+	public static void doTestB(EventBus eb) {
+		PatternBuilder pb = new PatternBuilder()
+			.addMatchAll("foo");
+	
+		/* Sequence test */
+		SequenceTermBuilder foo_a = 
+			new SequenceTermBuilder()
+				.add("foo", PatternOperator.EQ, new Long(5));
+		
+		SequenceTermBuilder bar_a = 
+			new SequenceTermBuilder()
+				.add("bar", PatternOperator.EQ, 30)
+				.setOccurrences(SequenceTermBuilder.KLEENE_STAR);
+						
+		SequenceTermBuilder foo_b = 
+			new SequenceTermBuilder()
+				.add("foo", PatternOperator.EQ, new Long(6));
+
+		SequenceTermBuilder bar_b = 
+			new SequenceTermBuilder()
+				.add("bar", PatternOperator.EQ, new Long(40))
+				.setOccurrences(2);
+		
+		SequenceBuilder sequence = 
+			new SequenceBuilder().and(foo_a).and(bar_a_).and(foo_b, bar_b);
+		
+		/* creates the 	SkipTillNextMatchListener */
+		SkipTillNextMatchListener listener = 
+			new SkipTillNextMatchListener(eb, pb.getPattern(), sequence) {
+			
+			/* user will mainly override this method */
+			public void onMessage(Map<String, Object> msg) {
+				//System.out.println("called inside the listener");
+			    Util.traceEvent(msg);	
+			}
+
+		};
+	}
+	
 	
 	
 }
