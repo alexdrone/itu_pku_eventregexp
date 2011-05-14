@@ -15,4 +15,6 @@ public class InfiniteTermStack {
 		this.aheadCounters = null;
 	}
 	
+	
+	
 }

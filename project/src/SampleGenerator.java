@@ -15,14 +15,19 @@ public class SampleGenerator extends GeneratorAdapter {
 			@Override
 			public void run() {
 				
-				/* first test */
+				/* test A */
 				//int[] foos = {1,  2,  3,  4,  5,  6,  5,  8,  8, 10};
 				//int[] bars = {5, 10, 10, 15, 25, 30, 35, 40, 40, 40};
 				
 				
-				/* second test */
-				int[] foos = {5, 0,  0,  0,  6};
-				int[] bars = {0, 60, 60, 60, 0};
+				/* test B */
+				//int[] foos = {5, 0,  0,  5,   0,  0, 0};
+				//int[] bars = {0, 60, 60, 60, 60, 40, 40};
+				
+				/* test B */
+				int[] foos = {5,  0,  0,  0,  0,  0, 5, 0, 10, 0};
+				int[] bars = {0, 60, 60, 60, 60,  1, 0, 1, 40, 40};
+				
 				
 				/* the EventBuilder class is a utility class that wraps a 
 				 * Map<String,Object>, its use is to create quickly maps 
@@ -37,7 +42,7 @@ public class SampleGenerator extends GeneratorAdapter {
 					eb.reset();
 					
 					try {
-						Thread.sleep(1000);
+						Thread.sleep(2000);
 						publish(eb
 							.put("foo", foos[i])
 							.put("bar", bars[i])

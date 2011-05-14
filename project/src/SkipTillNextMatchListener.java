@@ -158,11 +158,6 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 				if (expectedOccurrences < 0 && 
 					pointer + 1 < sequence.size()) {
 					
-					/* clean the stack data for all the terms in the 
-					 * sequence */
-					for (List<SequenceTermBuilder> l : sequence.sequence)
-						for (SequenceTermBuilder t : l) t.cleanUp();
-					
 					/* call to the recursive function */
 					List<Map<String,Object>> aheadCall = 
 						lookAheadSequence(pointer+1, term, msg);
@@ -175,7 +170,12 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 						/* we initialize the temporary variables for the 
 						 * next node-check */
 						counters = null;
-						currentMatch = null;	
+						currentMatch = null;
+						
+						/* clean the stack data for all the terms in the 
+						 * sequence */
+						for (List<SequenceTermBuilder> l : sequence.sequence)
+							for (SequenceTermBuilder t : l) t.cleanUp();	
 						
 						break;
 						
@@ -275,6 +275,10 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 		
 		if (stack.aheadCounters == null) {
 			
+			/* TODO: remove - debug print line */
+			System.out.println("•• debug •• initializing stack for node : " + node);
+			
+			
 			stack.aheadCounters = new LinkedList<Integer>();						
 			stack.aheadMatches = new LinkedList<List<Map<String,Object>>>();
 			
@@ -299,9 +303,6 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 			
 			for (SequenceTermBuilder term : node) {
 				
-				/* TODO: remove - debug print line */
-				System.out.println("•• debug ••  : " + node);
-				
 				int expectedOccurrences = term.getOccurrences();
 				int occurrences = stack.aheadCounters.get(i);
 				
@@ -325,20 +326,23 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 					} else {
 						/* todo: just add the matching elements with 
 						 * the infinite term */
+						
+						/* TODO: remove - debug print line */
+						System.out.println("•• debug •• I should add this finite term to the matched seq : " + term);
+						
 					}
 				
 				/* it's a finite cardinality term */
 				} else {
-					
-					/* TODO: remove - debug print line */
-					System.out.println("•• debug •• : is a finite term");
-					
+										
 					/* try to match the event message */
 					if (matchEvent(msg, term.getCriteria())) {
-						System.out.println("(lookAheadSequence) match with " + msg);
 
 						stack.aheadMatches.get(i).add(msg);
 						stack.aheadCounters.add(i, ++occurrences);
+						
+						System.out.println("(lookAheadSequence) match finite term with\n msg: " + msg + "\nocc: " + occurrences);
+						
 					}
 					
 					/* if a matching of a single term is terminated we just
