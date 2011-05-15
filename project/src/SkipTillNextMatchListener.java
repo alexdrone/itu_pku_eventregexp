@@ -283,9 +283,63 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 				i++;
 			}
 			
-		/* element in AND NOT */
+		/* element in AND NOT
+		 * TODO: Test this part of code */
 		} else {
-			/* TODO */	
+						
+			/* iterate through each term of the node */
+			int i = 0;			
+			for (SequenceTermBuilder term : node) {
+
+				int expectedOccurrences = term.getOccurrences();
+				int occurrences = stack.aheadCounters.get(i);
+
+				/* is not possible to handle infinite term sequence
+				 * for an AND NOT node */
+				if (expectedOccurrences < 0)
+					throw new RuntimeException("NOT term are no with" +
+					"infinite cardinality aren't allowed.");
+				
+				/* try to match the event message */
+				if (matchEvent(msg, term.getCriteria())) {
+					stack.aheadMatches.get(i).add(msg);
+					stack.aheadCounters.add(i, ++occurrences);
+				}
+				
+				/* The NOT term has been matched. The sequence should 
+				 * terminate here */
+				if (expectedOccurrences > 0 && 
+					occurrences == expectedOccurrences) {
+
+					System.out.println("Sequence halted.(NOT term found)");
+
+					/* the matched sequence is resetted */
+					this.matched = new LinkedList<Map<String, Object>>();
+					this.pointer = 0;
+
+					/* we initialize the temporary variables for the 
+					 * next node-check */
+					resetVariables();			
+					return null;
+				}
+				
+				/* call the lookAhead function in order to match 
+				 * the nect token */
+				if (lookAheadPointer + 1 < sequence.size())	{				
+				
+					/* evaluate the recursive call */
+					List<Map<String,Object>> result =
+					lookAheadSequence(lookAheadPointer + 1, term, msg);
+				
+					/* returns the recursive result */
+					if (result != null) {
+						stack.aheadMatches.get(i).addAll(result);
+						return stack.aheadMatches.get(i);
+					}
+				}
+				
+				/* end */
+			}
 		}
 		
 		return null;
@@ -337,18 +391,18 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 			if (expectedOccurrences > 0 && 
 				occurrences == expectedOccurrences) {
 					
-					/* we append all the current match for this term
-					 * in the final matched events list */
-					matched.addAll(M.get(i));
+				/* we append all the current match for this term
+				 * in the final matched events list */
+				matched.addAll(M.get(i));
 					
-					/* move to next node */
-					pointer = localPtr + 1;
+				/* move to next node */
+				pointer = localPtr + 1;
 					
-					/* re-initialize the temporary variables for the 
-					 * next node-check */
-					resetVariables();
-					break;
-				}				
+				/* re-initialize the temporary variables for the 
+				 * next node-check */
+				resetVariables();
+				break;
+			}				
 				
 			/* is a possible infinite sequence */
 			if (expectedOccurrences < 0 && 
@@ -417,17 +471,17 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 			if (expectedOccurrences > 0 && 
 				occurrences == expectedOccurrences) {
 					
-					System.out.println("Sequence halted. (NOT term found)");
+				System.out.println("Sequence halted. (NOT term found)");
 
-					/* the matched sequence is resetted */
-					this.matched = new LinkedList<Map<String, Object>>();
-					this.pointer = 0;
+				/* the matched sequence is resetted */
+				this.matched = new LinkedList<Map<String, Object>>();
+				this.pointer = 0;
 
-					/* we initialize the temporary variables for the 
-					 * next node-check */
-					resetVariables();			
-					return;
-				}		
+				/* we initialize the temporary variables for the 
+				 * next node-check */
+				resetVariables();			
+				return;
+			}	
 				
 			/* is not possible to handle infinite term sequence */
 			if (expectedOccurrences < 0)
