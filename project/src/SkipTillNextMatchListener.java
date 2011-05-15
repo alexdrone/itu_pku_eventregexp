@@ -20,9 +20,17 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	/* the current match */
 	private List<List<Map<String,Object>>> currentMatch;
 	
+	/* used for lookAhed(1) in not */
+	private List<List<Map<String,Object>>> aheadMatch;
+	
+	
 	/* the counter for the occurrences */
 	private List<Integer> counters;
-		
+	
+	/* aheadcounter */
+	private List<Integer> aheadCounters;
+	
+
 	/* pointer to the current node in the sequence */
 	private int pointer = 0;
 	
@@ -93,131 +101,50 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	/**
 	 * Core method - automata implementing the static matching 
 	 * of the pattern
+	 * For every node if is an AND node <code>andNode()</code> is called, 
+	 * <code>notNode()</code> otherwise.
+	 * On a single event message, the pointer can be moved of several 
+	 * position (ex. current sequence mode is an infinite term or a NOT 
+	 * term).
+	 * The two methods can therefore perform several lookaheads in 
+	 * the sequence.
+	 * @param msg the current event message, evenutally matched by 
+	 * one of the terms of the current node
 	 */
 	private void match(Map<String, Object> msg) { 
 						
-		/* the current pointed node in the sequence */
+		/* the current pointed node in the sequence, it contains  
+		 * all the terms (criterias) specified from the user */
 		List<SequenceTermBuilder> node = sequence.get(pointer);
 		
-		/* initialize the used data structures */
-		if (counters == null) {
-			
-			counters = new LinkedList<Integer>();
-									
-			currentMatch = new LinkedList<List<Map<String,Object>>>();
-			for (SequenceTermBuilder term : node) {
-				
-				/* creates the list for this node */
-				List<Map<String,Object>> l = 
-					new LinkedList<Map<String,Object>>();
-					
-				currentMatch.add(l);
-				
-				/* the counters */
-				counters.add(0);
-			}				
-		}
-			
-		/* element in AND */
-		if (!sequence.isNegated(pointer)) {
-						
-			/* iterate through each term of the node */
-			int i = 0;
-			for (SequenceTermBuilder term : node) {				
-								
-				int expectedOccurrences = term.getOccurrences();
-				int occurrences = counters.get(i);
-				
-				/* if this term match */
-				if (matchEvent(msg, term.getCriteria())) {
-					System.out.println("is matched");
-					
-					currentMatch.get(i).add(msg);
-					counters.add(i, ++occurrences);
-				}
-				/* if a matching of a single term is terminated we just
-				 * move the pointer on */
-				if (expectedOccurrences > 0 && 
-					occurrences == expectedOccurrences) {
-						
-						/* we append all the current match for this term
-						 * in the final matched events list */
-						matched.addAll(currentMatch.get(i));
-						
-						/* we move to next node */
-						pointer++;
-						
-						/* we initialize the temporary variables for the 
-						 * next node-check */
-						counters = null;
-						currentMatch = null;
-						break;
-					}				
-					
-				/* is a possible infinite sequence */
-				if (expectedOccurrences < 0 && 
-					pointer + 1 < sequence.size()) {
-					
-					/* call to the recursive function */
-					List<Map<String,Object>> aheadCall = 
-						lookAheadSequence(pointer+1, term, msg);
-					
-					if (aheadCall != null) {
-						/* the matched subsequence will be added by the
-						 * recursive function ?  */
-						matched.addAll(aheadCall);
-
-						/* we initialize the temporary variables for the 
-						 * next node-check */
-						counters = null;
-						currentMatch = null;
-						
-						/* clean the stack data for all the terms in the 
-						 * sequence */
-						for (List<SequenceTermBuilder> l : sequence.sequence)
-							for (SequenceTermBuilder t : l) t.cleanUp();	
-						
-						break;
-						
-					/* easiest case - the first is element compatible with
-					 * the infinite match */
-					} else if (matchEvent(msg, term.getCriteria())) {
-						System.out.println("(lookAheadTerm) kleene match");
-
-						currentMatch.get(i).add(msg);
-						counters.add(i, ++occurrences);
-					}
-				
-				/* is the last node */
-				} else if (expectedOccurrences < 0) {
-					/* todo: implement */
-				}
-				
-				i++;
-			}
+		/* the temporary variables are setted to null, when a complete
+		 * match of a term occurs. In this case all the variables should 
+		 * be reinitialized */
+		if (counters == null) init(pointer);
 		
-		/* element in AND NOT */
-		} else {
-			
-			/* todo */
-		}
+		/* the current node is an AND */
+		if (!sequence.isNegated(pointer)) andNode(pointer, msg, false);			
+	
+		/* node is an AND NOT */
+		else notNode(pointer, msg);
 		
 		/* check if the entire sequence is matched */
 		if (pointer == sequence.size()) {
+			
 			/* we just notify the client with the entire matched sequence */
 			Map<String, Object> map = new HashMap<String, Object>();
+			
+			/* TODO: The name of the sequence should be specified from 
+			 * the user in the constructor. */
 			map.put("sequence", matched);
 			onMessage(map);
 			
-			/* pointer is resetted */
+			/* pointer and result list are re-initialized */
 			pointer = 0;
-			
-			/* and matched initialized again */
-			 matched =
-				new LinkedList<Map<String, Object>>();
+			matched = new LinkedList<Map<String, Object>>();
 		}
 
-		/* fin */
+		/* end */
 	}
 	
 	/**
@@ -254,48 +181,58 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 	}
 	
 	/** 
-	 * this function is called everytime an infinite term is found.
+	 * This function is called everytime an infinite term is found.
 	 * it looks ahead in the sequence for terms that could match the 
-	 * given message
+	 * given message.
+	 * The field <code>_stack</code> of all the terms is used in order
+	 * to keep the information about the number of occurrences found since 
+	 * now (it's a sort of recoursive function call emulation, since 
+	 * pure recursion is not available for the event-based nature of 
+	 * this automata).
 	 * @param lookAheadPointer local pointer to the sequence node
 	 * @param termCaller the term that called this method
 	 */
 	private List<Map<String,Object>> lookAheadSequence(int lookAheadPointer, 
 	SequenceTermBuilder termCaller, Map<String,Object> msg) {
 						
+		/* This should never happen */
 		if (lookAheadPointer >= sequence.size())
-			throw new RuntimeException("(lookAheadSequence) Recursion went too far");
+			throw new RuntimeException("(lookAheadSequence) Recursion went" +
+			"too far");
 						
-		/* the previous term stack */ 
+		/* the previous term stack
+		 * here are stored all the information about the found occurrences and  
+		 * the matched sequences. */ 
 		InfiniteTermStack stack = termCaller._stack;
 		
 		/* initialize the data structures */
 		/* the current pointed node in the sequence */
 		List<SequenceTermBuilder> node = sequence.get(lookAheadPointer);
 		
+		/* initializing the stack for the current node
+		 * This section is extremely similiar to the init() method, 
+		 * but it refers to the _stack structures */
 		if (stack.aheadCounters == null) {
 			
-			/* TODO: remove - debug print line */
-			System.out.println("•• debug •• initializing stack for node : " + node);
-			
-			
 			stack.aheadCounters = new LinkedList<Integer>();						
-			stack.aheadMatches = new LinkedList<List<Map<String,Object>>>();
+			stack.aheadMatches  = new LinkedList<List<Map<String,Object>>>();
 			
 			for (SequenceTermBuilder term : node) {
 				
 				/* creates the list for this node */
-				List<Map<String,Object>> l = 
-					new LinkedList<Map<String,Object>>();
+				List<Map<String,Object>> list = 
+				new LinkedList<Map<String,Object>>();
 					
-				stack.aheadMatches.add(l);
+				stack.aheadMatches.add(list);
 				
 				/* the counters */
 				stack.aheadCounters.add(0);
 			}				
 		}
 		
-		/* element in AND */
+		/* element in AND
+		 * This section is similiar to the andNode() method but 
+		 * is performing the lookAhead on the sequence */
 		if (!sequence.isNegated(lookAheadPointer)) {
 						
 			/* iterate through each term of the node */
@@ -306,12 +243,10 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 				int expectedOccurrences = term.getOccurrences();
 				int occurrences = stack.aheadCounters.get(i);
 				
-				/* again is an infinite term */
+				/* again is an infinite term, the lookahead should 
+				 * continue */
 				if (expectedOccurrences < 0) {
-					
-					/* TODO: remove - debug print line */
-					System.out.println("•• debug •• : is an infinite term");
-
+			
 					if (lookAheadPointer + 1 < sequence.size())	{				
 					
 						/* evaluate the recursive call */
@@ -324,12 +259,8 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 							return stack.aheadMatches.get(i);
 						}
 					} else {
-						/* todo: just add the matching elements with 
-						 * the infinite term */
-						
-						/* TODO: remove - debug print line */
-						System.out.println("•• debug •• I should add this finite term to the matched seq : " + term);
-						
+						/* TODO: just add the matching elements with 
+						 * the infinite term */						
 					}
 				
 				/* it's a finite cardinality term */
@@ -337,12 +268,8 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 										
 					/* try to match the event message */
 					if (matchEvent(msg, term.getCriteria())) {
-
 						stack.aheadMatches.get(i).add(msg);
 						stack.aheadCounters.add(i, ++occurrences);
-						
-						System.out.println("(lookAheadSequence) match finite term with\n msg: " + msg + "\nocc: " + occurrences);
-						
 					}
 					
 					/* if a matching of a single term is terminated we just
@@ -351,17 +278,227 @@ public class SkipTillNextMatchListener /*extends dk.itu.infobus.ws.Listener*/ {
 						occurrences == expectedOccurrences) {	
 							this.pointer = lookAheadPointer + 1;
 							return stack.aheadMatches.get(i);
-						}
+					}
 				}
 				i++;
 			}
 			
 		/* element in AND NOT */
 		} else {
-			/* todo */
+			/* TODO */	
 		}
 		
 		return null;
 	}
 	
+	/**
+	 * Tries to match an AND node and performs all the connected 
+	 * actions. This methods performs several lookaheads on the sequence
+	 * in order to handle infinite term matching (<code>KLEENE_STAR</code>
+	 * cardinality).
+	 * @param localPtr the pointer to the current node in the sequence
+	 * @param msg the event message 
+	 * @param ahead this parameter should be set to <code>true</code> if 
+	 * the method is called from the <code>notNode()</code> method, in 
+	 * order to skip the NOT node not matched.
+	 */
+	private void andNode(int localPtr, Map<String, Object> msg, 
+	boolean ahead) {
+			
+		/* get the node pointed by localPtr */
+		List<SequenceTermBuilder> node = sequence.get(localPtr);
+		
+		/* The structures where the matched subsequences will be 
+		 * saved. They're different depending from wheter this is 
+		 * a lookahead node, or not */
+		List<List<Map<String,Object>>> M;	
+		List<Integer> C;
+		
+		M = ahead ? aheadMatch : currentMatch;
+		C = ahead ? aheadCounters : counters;
+		
+		/* iterate through each term of the node */
+		int i = 0;
+		for (SequenceTermBuilder term : node) {
+							
+			int expectedOccurrences = term.getOccurrences();
+			int occurrences = C.get(i);
+			
+			/* if this term match */
+			if (matchEvent(msg, term.getCriteria())) {
+				System.out.println("is matched");
+				
+				M.get(i).add(msg);
+				C.add(i, ++occurrences);
+			}
+			
+			/* if a matching of a single term is terminated we just
+			 * move the pointer on */
+			if (expectedOccurrences > 0 && 
+				occurrences == expectedOccurrences) {
+					
+					/* we append all the current match for this term
+					 * in the final matched events list */
+					matched.addAll(M.get(i));
+					
+					/* move to next node */
+					pointer = localPtr + 1;
+					
+					/* re-initialize the temporary variables for the 
+					 * next node-check */
+					resetVariables();
+					break;
+				}				
+				
+			/* is a possible infinite sequence */
+			if (expectedOccurrences < 0 && 
+				localPtr + 1 < sequence.size()) {
+				
+				/* call to the recursive function */
+				List<Map<String,Object>> aheadCall = 
+					lookAheadSequence(localPtr + 1, term, msg);
+				
+				if (aheadCall != null) {
+					/* the matched subsequence will be added by the
+					 * recursive function ?  */
+					matched.addAll(aheadCall);
+
+					/* we initialize the temporary variables for the 
+					 * next node-check */
+					resetVariables();
+					break;
+					
+				/* easiest case - the first is element compatible with
+				 * the infinite match */
+				} else if (matchEvent(msg, term.getCriteria())) {
+					M.get(i).add(msg);
+					C.add(i, ++occurrences);
+				}
+			
+				/* TODO : } else (expectedOccurences < 0) .. last term inf */	
+			}
+			i++;
+		}
+	}
+	
+	/**
+	 * Tries to match an AND NOT node and performs all the connected 
+	 * actions. This methods could perform several lookaheds, because 
+	 * it calls <code>andNode()</code> to perform a lookAhead(1) and 
+	 * from that, everything can happen. 
+	 * @param localPtr the pointer to the current node in the sequence
+	 * @param msg the event message 
+	 * @param ahead this parameter should be set to <code>true</code> if 
+	 * the method is called from the <code>notNode()</code> method, in 
+	 * order to skip the NOT node not matched.
+	 */
+	private void notNode(int localPtr, Map<String, Object> msg) {
+				
+		List<SequenceTermBuilder> node = sequence.get(localPtr);
+							
+		/* iterate through each term of the node */
+		int i = 0;
+		for (SequenceTermBuilder term : node) {	
+
+			int expectedOccurrences = term.getOccurrences();
+			int occurrences = counters.get(i);
+
+			/* if this term match */
+			if (matchEvent(msg, term.getCriteria())) {
+				
+				System.out.println("matched");
+							
+				currentMatch.get(i).add(msg);
+				counters.add(i, ++occurrences);
+			}
+			
+			/* if a matching of a single term is terminated we just
+			 * move the pointer on */
+			if (expectedOccurrences > 0 && 
+				occurrences == expectedOccurrences) {
+					
+					System.out.println("Sequence halted. (NOT term found)");
+
+					/* the matched sequence is resetted */
+					this.matched = new LinkedList<Map<String, Object>>();
+					this.pointer = 0;
+
+					/* we initialize the temporary variables for the 
+					 * next node-check */
+					resetVariables();			
+					return;
+				}		
+				
+			/* is not possible to handle infinite term sequence */
+			if (expectedOccurrences < 0)
+				throw new RuntimeException("NOT term are no with" +
+				"infinite cardinality aren't allowed.");	
+				
+			i++;
+		}
+		
+		/* lookahead (1) */
+		System.out.println("notNode: lookAhead(+1)");
+		andNode(localPtr + 1, msg, true);
+	}
+	
+	/**
+	 * Initialization of the global datastructures 
+	 * These temporary variables are used to store the current 
+	 * matched subsequences and the number of occurrences found since now
+	 * @param localPtr the structures will be initialized gathering the 
+	 * information from the node in the sequence pointed by localPtr.
+	 */
+	private void init(int localPtr) {
+		
+		/* get the node */
+		List<SequenceTermBuilder> node = sequence.get(localPtr);
+		
+		counters = new LinkedList<Integer>();
+		currentMatch = new LinkedList<List<Map<String,Object>>>();
+		
+		for (SequenceTermBuilder term : node) {
+			
+			/* creates the list for this node */
+			List<Map<String,Object>> l = 
+				new LinkedList<Map<String,Object>>();
+			currentMatch.add(l);
+			
+			/* the counters */
+			counters.add(0);
+		}				
+		
+		/* init of the ahead node */
+		if (pointer + 1 < sequence.size()) {
+			List<SequenceTermBuilder> aheadNode = sequence.get(pointer+1);
+			aheadCounters = new LinkedList<Integer>();
+
+			aheadMatch = new LinkedList<List<Map<String,Object>>>();
+			for (SequenceTermBuilder term : aheadNode) {
+
+				/* creates the list for this ahead node */
+				List<Map<String,Object>> l = 
+					new LinkedList<Map<String,Object>>();
+				aheadMatch.add(l);
+
+				/* the counters */
+				aheadCounters.add(0);
+			}
+		}
+	}
+	
+	/**
+	 * Reset the global datastructures, usualy it's called 
+	 * when a match is completed, and the pointer is moved to the next 
+	 * node in the sequence */
+	private void resetVariables() {
+		counters = null;
+		currentMatch = null;
+		aheadMatch = null;
+		aheadCounters = null;
+		
+		/* clean the stack data for all the terms in the sequence */
+		for (List<SequenceTermBuilder> l : sequence.sequence)
+			for (SequenceTermBuilder t : l) t.cleanUp();
+	}
 }

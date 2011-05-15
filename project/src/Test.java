@@ -17,7 +17,7 @@ public class Test {
 		eb.start();
 		eb.addGenerator(new SampleGenerator());
 		
-		doTestC(eb);
+		doTestB(eb);
 	}
 	
 	/* first test */
@@ -140,6 +140,40 @@ public class Test {
 		
 		SequenceBuilder sequence = 
 			new SequenceBuilder().and(foo_a).and(bar_a).and(baz_a, foo_a).and(foo_b, bar_b);
+		
+		/* creates the 	SkipTillNextMatchListener */
+		SkipTillNextMatchListener listener = 
+			new SkipTillNextMatchListener(eb, pb.getPattern(), sequence) {
+			
+			/* user will mainly override this method */
+			public void onMessage(Map<String, Object> msg) {
+				//System.out.println("called inside the listener");
+			    Util.traceEvent(msg);	
+			}
+
+		};
+	}
+	
+	/* second test */
+	public static void doTestNOT(EventBus eb) {
+		PatternBuilder pb = new PatternBuilder()
+			.addMatchAll("foo");
+	
+		/* Sequence test */
+		SequenceTermBuilder foo_a = 
+			new SequenceTermBuilder()
+				.add("foo", PatternOperator.EQ, new Long(1));
+		
+		SequenceTermBuilder foo_b = 
+			new SequenceTermBuilder()
+				.add("foo", PatternOperator.EQ, new Long(2));
+							
+		SequenceTermBuilder foo_c = 
+			new SequenceTermBuilder()
+				.add("foo", PatternOperator.EQ, new Long(3));
+
+		SequenceBuilder sequence = 
+			new SequenceBuilder().and(foo_a).andNot(foo_b).and(foo_c);
 		
 		/* creates the 	SkipTillNextMatchListener */
 		SkipTillNextMatchListener listener = 

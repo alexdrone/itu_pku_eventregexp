@@ -24,9 +24,14 @@ public class SampleGenerator extends GeneratorAdapter {
 				//int[] foos = {5, 0,  0,  5,   0,  0, 0};
 				//int[] bars = {0, 60, 60, 60, 60, 40, 40};
 				
-				/* test B */
+				/* test C */
 				int[] foos = {5,  0,  0,  0,  0,  0, 5, 0, 10, 0};
 				int[] bars = {0, 60, 60, 60, 60,  1, 0, 1, 40, 40};
+				
+				
+				/* test NOT */
+				//int[] foos = {1, 3, 3};
+				//int[] bars = {0, 0, 0};
 				
 				
 				/* the EventBuilder class is a utility class that wraps a 
@@ -42,7 +47,7 @@ public class SampleGenerator extends GeneratorAdapter {
 					eb.reset();
 					
 					try {
-						Thread.sleep(2000);
+						Thread.sleep(500);
 						publish(eb
 							.put("foo", foos[i])
 							.put("bar", bars[i])

@@ -34,8 +34,21 @@ public class SequenceBuilder {
 	public SequenceBuilder andNot(SequenceTermBuilder... terms) {
 		
 		/* the term is not negated */
-		conjunctions.add(false);
-		addTerms(terms);
+		int length = conjunctions.size();
+		
+		/* normalize the not form if the last node inserted 
+		 * was a not conjuction as well */
+		if (!conjunctions.get(length-1))  {
+			
+			/* the last node inserted */
+			List<SequenceTermBuilder> node = sequence.get(length-1);
+				
+			for (SequenceTermBuilder t : terms) node.add(t);
+		
+		} else {
+			conjunctions.add(false);
+			addTerms(terms);
+		}
 		
 		return this;
 	}
